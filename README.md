@@ -14,6 +14,14 @@ OWID CSV → EventBridge → Ingest Lambda → S3 raw/
                     Glue Crawler (on-demand) → Athena SQL
 ```
 
+Detailed design and security rationale live on the Wiki (not in this repo):
+
+| Topic | Wiki page |
+|-------|-----------|
+| Data flow, S3 zones, bucket strategy, networking | [Architecture](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Architecture) |
+| Encryption, IAM, audit, CI/CD auth | [Security Decisions](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Security-Decisions) |
+| Mermaid diagrams | [Architecture Overview](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Architecture-Overview) |
+
 ## Wiki & planning (not in this repo)
 
 | Resource | Link |
