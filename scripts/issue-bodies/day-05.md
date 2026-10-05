@@ -1,39 +1,47 @@
-## What we are doing today
+## Summary
+Build the Ingest Lambda that downloads OWID vaccination CSV data for the S3 raw zone.
 
-Day 5 builds the **Ingest Lambda** — the first executable code in the pipeline. This function downloads public OWID vaccination CSV data and will eventually write it to S3 `raw/` zone on a weekly schedule.
+## Prerequisites
+- Issue #4 closed — scripts folder exists
+
+## What we are doing today
+You write the first executable pipeline code: a Python Lambda handler that downloads public OWID vaccination coverage CSV from HTTPS and will upload it to S3 `raw/` when deployed.
 
 ## Why it matters
+This proves serverless ingestion from a public data source. The function runs outside VPC (no NAT Gateway cost) and writes dated, immutable snapshots under `raw/owid/ingest_date=YYYY-MM-DD/`.
 
-- Proves you can build **serverless ingestion** from a public HTTPS source.
-- Runs **outside VPC** on purpose — no NAT Gateway cost to reach the internet.
-- Output lands in `raw/owid/ingest_date=YYYY-MM-DD/` — immutable dated snapshots.
-
-## Instructions
+## Step-by-step instructions
 
 ### Step 1 — Create lambda/ingest folder
 ```bash
 mkdir -p lambda/ingest
 ```
 
-### Step 2 — requirements.txt
-1. Create `lambda/ingest/requirements.txt`
-2. Paste from local project (boto3 for S3 upload when deployed).
+### Step 2 — lambda/ingest/requirements.txt
+List dependencies needed at deploy time:
+- `boto3` — S3 upload
+- (stdlib `urllib` is used for download — no extra package needed)
 
-### Step 3 — handler.py
-1. Create `lambda/ingest/handler.py`
-2. Paste from local project.
-3. Read the flow: download CSV from OWID URL → `put_object` to S3 raw prefix.
-4. Optional test: `python3 -m py_compile lambda/ingest/handler.py`
+### Step 3 — lambda/ingest/handler.py
+Implement a handler that:
+1. Reads `DATA_LAKE_BUCKET` from environment variables.
+2. Accepts optional `ingest_date` from the event (default: today’s date ISO string).
+3. Downloads CSV from OWID vaccination coverage URL via HTTPS with a User-Agent header.
+4. Uploads to S3 key: `raw/owid/ingest_date={date}/vaccination_coverage.csv`
+5. Sets `ContentType=text/csv` and server-side encryption on upload.
+6. Returns JSON with bucket, key, byte count, and ingest_date.
 
-## What the code does
-1. EventBridge (later) or manual invoke passes optional `ingest_date`.
-2. Lambda downloads OWID vaccination coverage CSV.
-3. Writes to `raw/owid/ingest_date={date}/vaccination_coverage.csv` with SSE encryption.
+Optional test: `python3 -m py_compile lambda/ingest/handler.py`
+
+## Files to create
+- `lambda/ingest/requirements.txt`
+- `lambda/ingest/handler.py`
 
 ## Done when
-- [ ] `lambda/ingest/handler.py` and `requirements.txt` in repo
+- [ ] Handler downloads from OWID URL and targets correct S3 key pattern
+- [ ] Requirements file lists boto3
 - [ ] Code compiles without syntax errors
-- [ ] Pushed to GitHub
+- [ ] Files pushed to `main`
 
 ## AWS required?
 No — code only. Deployed and tested after Terraform ingestion module (Day 10).

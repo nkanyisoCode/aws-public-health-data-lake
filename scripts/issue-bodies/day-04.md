@@ -1,32 +1,43 @@
-## What we are doing today
+## Summary
+Add bootstrap scripts for Terraform state and region reference data.
 
-Day 4 adds **bootstrap scripts** — small shell utilities that support deployment later. You are not deploying yet; you are preparing the tools.
+## Prerequisites
+- Issue #3 closed — cost and runbook docs exist
+
+## What we are doing today
+You create small shell utilities that support deployment later. You are not deploying to AWS yet — only preparing the tools.
 
 ## Why it matters
+Terraform remote state in S3 is required for repeatable, team-safe infrastructure. The bootstrap script creates that bucket once, outside Terraform. Region aliases support consistent region names during data cleaning.
 
-- **`bootstrap_tf_state.sh`** — creates the S3 bucket that stores Terraform state (required before `terraform init` with remote backend).
-- **`region_aliases.csv`** — reference data carried over from your data engineering project for region name standardisation during cleaning.
-
-## Instructions
+## Step-by-step instructions
 
 ### Step 1 — Create scripts folder
 ```bash
 mkdir -p scripts
 ```
 
-### Step 2 — bootstrap_tf_state.sh
-1. Create the file and paste from local project.
-2. Make executable: `chmod +x scripts/bootstrap_tf_state.sh`
-3. **Do not run yet** unless you have an AWS account — save for after Day 14.
+### Step 2 — scripts/bootstrap_tf_state.sh
+1. Write a bash script that accepts owner name and region as arguments.
+2. Create an S3 bucket named `{owner}-tfstate-{account_id}`.
+3. Enable block public access, versioning, and default encryption (AES256).
+4. Print the bucket name so the user can update `terraform/envs/dev/backend.tf` later.
+5. Make executable: `chmod +x scripts/bootstrap_tf_state.sh`
+6. **Do not run until you have an AWS account** (after Day 14).
 
-### Step 3 — region_aliases.csv
-1. Create the file and paste from local project (or copy from `public-health-etl-pipeline`).
-2. This maps alternate region names to ISO codes during the clean step.
+### Step 3 — scripts/region_aliases.csv
+1. Create a CSV with columns: `alias`, `iso_code`.
+2. Add a few rows mapping alternate region names to ISO codes (e.g. common spelling variants).
+3. This file supports region standardisation in the clean Lambda (Day 6).
+
+## Files to create
+- `scripts/bootstrap_tf_state.sh`
+- `scripts/region_aliases.csv`
 
 ## Done when
-- [ ] `scripts/bootstrap_tf_state.sh` is executable
-- [ ] `scripts/region_aliases.csv` present
-- [ ] Files pushed to GitHub
+- [ ] Bootstrap script is executable and documents its usage in comments
+- [ ] Region aliases CSV has header row and sample mappings
+- [ ] Files pushed to `main`
 
 ## AWS required?
 No today. Run bootstrap script only when AWS account is ready.

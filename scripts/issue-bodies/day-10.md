@@ -1,41 +1,59 @@
-## What we are doing today
+## Summary
+Create the Terraform ingestion module: Lambdas, EventBridge schedule, S3 event trigger, and IAM roles.
 
-Day 10 adds the **ingestion Terraform module** — wires your Day 5 and Day 6 Lambda code into AWS with scheduling, IAM roles, and the key enhancement: **automatic cleaning when a new raw file arrives**.
+## Prerequisites
+- Issue #9 closed — data lake Terraform module exists
+- Lambda code from Days 5–6 in `lambda/ingest/` and `lambda/clean/`
+
+## What we are doing today
+You wire the Python handlers into AWS: scheduled ingest Lambda, event-driven clean Lambda, least-privilege IAM, and CloudWatch alarms on failures.
 
 ## Why it matters
+This is the automation layer — weekly ingest with zero manual steps after deploy. The S3 event notification on `raw/*.csv` is a key enhancement: new files automatically trigger cleaning.
 
-- **EventBridge** replaces Airflow/cron for weekly OWID downloads.
-- **S3 event notification** triggers Clean Lambda — event-driven pipeline, no polling.
-- **Least-privilege IAM** — separate roles for ingest, clean, and reporting.
-- **CloudWatch alarms** → SNS email when either Lambda fails.
+## Step-by-step instructions
 
-## Instructions
-
-### Step 1 — Create module folder
+### Step 1 — Create ingestion module folder
 ```bash
 mkdir -p terraform/modules/ingestion
 ```
 
-### Step 2 — Add module files
-1. `variables.tf`, `main.tf`, `outputs.tf` — paste from local project.
+### Step 2 — terraform/modules/ingestion/variables.tf
+Define: env, account_id, data lake bucket id/name/arn, ingest schedule, SNS topic arn, Glue crawler name/arn, optional VPC subnet and security group ids, optional RDS secret arn.
 
-## What the module creates
-| Resource | Purpose |
-|----------|---------|
-| Ingest Lambda | Downloads OWID → S3 raw/ (no VPC) |
-| EventBridge rule | Weekly schedule (default: Monday 06:00 UTC) |
-| Clean Lambda | Triggered by S3 event on raw/*.csv |
-| IAM roles | ingest, clean, reporting (read-only) |
-| S3 notification | ObjectCreated → clean Lambda |
-| CloudWatch alarms | Error count > 0 → SNS |
+### Step 3 — terraform/modules/ingestion/main.tf
+Implement:
 
-## Key design decision
-Ingest stays **outside VPC** (internet access for OWID). Clean can run inside VPC later if RDS is enabled.
+**Ingest Lambda (no VPC):**
+- Package from `lambda/ingest/`
+- IAM role: write to `raw/*` only
+- EventBridge cron rule (weekly)
+- CloudWatch alarm on errors → SNS
+
+**Clean Lambda (optional VPC):**
+- Package from `lambda/clean/`
+- IAM role: read raw/, write clean/ curated/ quarantine/, start Glue crawler
+- S3 bucket notification: `ObjectCreated` on `raw/` suffix `.csv` → invoke clean Lambda
+- CloudWatch alarm on errors → SNS
+
+**Reporting role:**
+- Read-only on clean/ and curated/; Athena and Glue read permissions
+
+Use `archive_file` data source to zip Lambda folders.
+
+### Step 4 — terraform/modules/ingestion/outputs.tf
+Export: Lambda names/arns, role arns, reporting role arn.
+
+## Files to create
+- `terraform/modules/ingestion/variables.tf`
+- `terraform/modules/ingestion/main.tf`
+- `terraform/modules/ingestion/outputs.tf`
 
 ## Done when
-- [ ] Ingestion module files in repo
-- [ ] You can explain S3 event → clean Lambda flow
-- [ ] Pushed to GitHub
+- [ ] S3 event notification triggers clean Lambda on raw CSV upload
+- [ ] Ingest and clean roles follow least-privilege paths
+- [ ] EventBridge schedule targets ingest Lambda
+- [ ] Files pushed to `main`
 
 ## AWS required?
-No — code only.
+No — Terraform code only.

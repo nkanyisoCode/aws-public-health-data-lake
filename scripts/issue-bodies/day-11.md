@@ -1,38 +1,44 @@
-## What we are doing today
+## Summary
+Create the Terraform analytics module: Glue Data Catalog, on-demand crawler, and Athena workgroup.
 
-Day 11 adds the **analytics module** — Glue Data Catalog and Athena so you can run SQL directly on S3 Parquet files without a database server.
+## Prerequisites
+- Issue #10 closed — ingestion Terraform module exists
+
+## What we are doing today
+You make S3 Parquet queryable by registering schemas in Glue and configuring an Athena workgroup with scan limits.
 
 ## Why it matters
+Raw storage alone is not a data lake — discoverability and SQL access matter. The on-demand crawler (no schedule) is triggered by the clean Lambda after each run, keeping catalog fresh without extra cost.
 
-- **Glue Crawler** discovers schema from Parquet in `clean/` and `curated/`.
-- **On-demand crawler** — no schedule; Clean Lambda starts it after each run (saves cost vs hourly crawl).
-- **Athena workgroup** — enforces query scan limits to prevent expensive mistakes.
+## Step-by-step instructions
 
-## Instructions
-
-### Step 1 — Create module folder
+### Step 1 — Create analytics module folder
 ```bash
 mkdir -p terraform/modules/analytics
 ```
 
-### Step 2 — Add module files
-Paste `variables.tf`, `main.tf`, `outputs.tf` from local project.
+### Step 2 — terraform/modules/analytics/variables.tf
+Define: env, region, account_id, data lake bucket name/arn, athena bytes scanned limit.
 
-## What the module creates
-| Resource | Purpose |
-|----------|---------|
-| Glue database | `health_lake_{env}` |
-| Glue crawler | Scans clean/ + curated/ (schedule = empty) |
-| Athena workgroup | `health-lake-{env}`, results → s3://.../athena-results/ |
-| Scan limit | Default 1 GB per query in dev |
+### Step 3 — terraform/modules/analytics/main.tf
+Implement:
+1. **Glue database** — `health_lake_{env}`.
+2. **Glue crawler IAM role** — read clean/ and curated/; write Glue catalog.
+3. **Glue crawler** — targets `s3://{bucket}/clean/` and `curated/`; **empty schedule** (on-demand only).
+4. **Athena workgroup** — `health-lake-{env}`; output to `athena-results/`; enforce scan byte limit; SSE-S3 on results.
 
-## How it connects
-Clean Lambda writes Parquet → calls `StartCrawler` → Glue registers tables → Athena queries from Day 8 SQL files work.
+### Step 4 — terraform/modules/analytics/outputs.tf
+Export: glue database name, crawler name/arn, athena workgroup name.
+
+## Files to create
+- `terraform/modules/analytics/variables.tf`
+- `terraform/modules/analytics/main.tf`
+- `terraform/modules/analytics/outputs.tf`
 
 ## Done when
-- [ ] Analytics module files in repo
-- [ ] You understand on-demand vs scheduled crawler
-- [ ] Pushed to GitHub
+- [ ] Crawler has no schedule (on-demand via clean Lambda)
+- [ ] Athena workgroup has bytes_scanned_cutoff configured
+- [ ] Files pushed to `main`
 
 ## AWS required?
-No — code only.
+No — Terraform code only.

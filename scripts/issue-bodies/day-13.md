@@ -1,47 +1,57 @@
-## What we are doing today
+## Summary
+Wire all modules in the dev environment and add optional VPC and RDS modules.
 
-Day 13 **wires everything together** in the dev environment and adds optional networking/RDS modules. This is the first day all Terraform modules connect into one deployable stack.
+## Prerequisites
+- Issues #9–#12 closed — all core Terraform modules exist
+
+## What we are doing today
+You create `terraform/envs/dev/` that connects data_lake, ingestion, analytics, and security modules. You also add optional network (VPC, S3 endpoint) and warehouse (RDS) modules — disabled by default to save cost.
 
 ## Why it matters
+Environment wiring is how modules become a deployable stack. Separate dev tfvars with cheap defaults (`enable_network = false`, `enable_rds = false`) keeps student accounts safe.
 
-- **`terraform/envs/dev/main.tf`** — calls data_lake, ingestion, analytics, security modules together.
-- **`dev.tfvars`** — feature flags keep cost low (network/RDS off by default).
-- **Network module (optional)** — VPC, private subnets, S3 gateway endpoint, Secrets Manager endpoint for RDS.
-- **Warehouse module (optional)** — private RDS PostgreSQL if you need a traditional warehouse.
+## Step-by-step instructions
 
-## Instructions
+### Step 1 — terraform/envs/dev/backend.tf
+Configure S3 remote backend with placeholder bucket name, key `health-lake/dev/terraform.tfstate`, region, encrypt, use_lockfile. Require Terraform >= 1.10 and AWS provider ~> 5.0.
 
-### Step 1 — Dev environment files
-1. `terraform/envs/dev/backend.tf` — remote state config (update bucket name when AWS ready)
-2. `terraform/envs/dev/variables.tf`
-3. `terraform/envs/dev/dev.tfvars` — set your `owner` and `alert_email`
-4. `terraform/envs/dev/main.tf` — wires all modules
+### Step 2 — terraform/envs/dev/variables.tf and dev.tfvars
+Define variables: region, env, owner, alert_email, feature flags (network, rds, guardduty, config, github_oidc), ingest schedule, athena scan limit.
 
-### Step 2 — Optional modules
-1. `terraform/modules/network/` — VPC, endpoints, security groups
-2. `terraform/modules/warehouse/` — RDS PostgreSQL
+In `dev.tfvars` set your owner name, alert email, and keep expensive features off.
 
-Paste all from local project.
+### Step 3 — terraform/envs/dev/main.tf
+Wire modules:
+- data_lake → security → analytics → ingestion
+- Optional network and warehouse modules when flags enabled
+- Provider default tags: project, env, owner, managed_by, cost_center
+- Outputs: bucket name, lambda names, glue database, sns arn
 
-### Step 3 — Validate locally (no AWS needed)
-```bash
-cd terraform/envs/dev
-terraform init -backend=false
-terraform validate
-```
+### Step 4 — terraform/modules/network/ (optional)
+Implement: VPC 10.0.0.0/16, two private subnets, S3 gateway endpoint, optional Secrets Manager interface endpoint, app and db security groups, db subnet group.
 
-## Feature flags in dev.tfvars (keep cheap)
-| Flag | Dev default | Why |
-|------|-------------|-----|
-| enable_network | false | Skip VPC until needed |
-| enable_rds | false | RDS ~$15/mo if left on |
-| enable_guardduty | false | Save cost |
-| enable_config | false | Save cost |
+### Step 5 — terraform/modules/warehouse/ (optional)
+Implement: RDS PostgreSQL, encrypted, private, manage_master_user_password via Secrets Manager, skip_final_snapshot in dev.
+
+Validate: `cd terraform/envs/dev && terraform init -backend=false && terraform validate`
+
+## Files to create
+- `terraform/envs/dev/backend.tf`
+- `terraform/envs/dev/variables.tf`
+- `terraform/envs/dev/dev.tfvars`
+- `terraform/envs/dev/main.tf`
+- `terraform/modules/network/variables.tf`
+- `terraform/modules/network/main.tf`
+- `terraform/modules/network/outputs.tf`
+- `terraform/modules/warehouse/variables.tf`
+- `terraform/modules/warehouse/main.tf`
+- `terraform/modules/warehouse/outputs.tf`
 
 ## Done when
-- [ ] Dev env files complete
-- [ ] `terraform validate` passes
-- [ ] Pushed to GitHub
+- [ ] `terraform validate` passes in dev env
+- [ ] dev.tfvars has owner and email set
+- [ ] Network and RDS modules exist but default to disabled
+- [ ] Files pushed to `main`
 
 ## AWS required?
-No for validate. `terraform apply` after Day 14 when account is ready.
+No for code. Fill backend bucket name when AWS account is ready.

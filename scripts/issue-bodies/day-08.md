@@ -1,37 +1,45 @@
-## What we are doing today
+## Summary
+Write Athena SQL queries for vaccination coverage analysis and reporting views.
 
-Day 8 adds **Athena SQL queries** — the analytics layer that answers your original public health question: vaccination coverage by region over time.
+## Prerequisites
+- Issue #7 closed — helper scripts exist
+
+## What we are doing today
+You create SQL files that answer the portfolio question: vaccination coverage by region over time. These run in Athena after Glue registers tables (post-deploy).
 
 ## Why it matters
+The data lake exists to be queried. SQL files in the repo document your analytics layer and give reviewers a concrete question the pipeline answers.
 
-- Shows the **end goal** of the pipeline: SQL on S3 without loading into a traditional warehouse.
-- **`vaccination_by_region.sql`** — portfolio demo query.
-- **`create_views.sql`** — star-schema views over Glue tables for cleaner reporting.
-
-## Instructions
+## Step-by-step instructions
 
 ### Step 1 — Create sql folder
 ```bash
 mkdir -p sql
 ```
 
-### Step 2 — vaccination_by_region.sql
-1. Create and paste from local project.
-2. Read the query: groups by region, year, indicator; filters last 10 years.
+### Step 2 — sql/vaccination_by_region.sql
+Write a query that:
+1. Selects region_name, year, indicator_name, and average vaccination rate.
+2. Filters to the last 10 years and non-null values.
+3. Groups by region, year, and indicator.
+4. Orders by region and year.
+5. Add a comment noting the Athena workgroup and Glue database name (e.g. `health_lake_dev`).
 
-### Step 3 — create_views.sql
-1. Create and paste from local project.
-2. Defines `vw_vaccination_summary` and `vw_who_threshold_gaps` views.
+### Step 3 — sql/create_views.sql
+Write SQL to create views:
+1. `vw_vaccination_summary` — joins fact and dimension columns for vaccination indicators.
+2. `vw_who_threshold_gaps` — flags countries below 90% coverage threshold.
 
-## What happens later (after AWS deploy)
-1. Glue crawler registers Parquet tables in `health_lake_dev` database.
-2. Open Athena console → workgroup `health-lake-dev`.
-3. Run these SQL files and screenshot results for portfolio.
+Use `CREATE OR REPLACE VIEW` syntax appropriate for Athena.
+
+## Files to create
+- `sql/vaccination_by_region.sql`
+- `sql/create_views.sql`
 
 ## Done when
-- [ ] Both SQL files in `sql/`
-- [ ] You understand what question each query answers
-- [ ] Pushed to GitHub
+- [ ] Vaccination query answers the core portfolio question
+- [ ] View definitions reference curated star-schema tables
+- [ ] Files pushed to `main`
 
 ## AWS required?
-No — SQL files only. Run in Athena after Day 14 deploy.
+No — SQL files only. Run in Athena after deploy.

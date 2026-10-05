@@ -1,14 +1,16 @@
-## What we are doing today
+## Summary
+Create the Terraform S3 data lake module — buckets, security, lifecycle rules, and zone prefixes.
 
-Day 9 starts **Infrastructure as Code** with the S3 **data lake module**. This Terraform code creates your bucket, security settings, lifecycle rules, and zone prefixes — the storage foundation everything else depends on.
+## Prerequisites
+- Issue #8 closed — SQL queries exist in `sql/`
+
+## What we are doing today
+You start Infrastructure as Code by defining the S3 storage layer: the data lake bucket with raw/clean/curated/quarantine prefixes, a separate logs bucket, encryption, lifecycle rules, and HTTPS-only bucket policy.
 
 ## Why it matters
+Everything else in the project depends on secure, cost-aware storage. This module is the foundation — repeatable, reviewable, and deployable with one Terraform apply.
 
-- **Repeatable infrastructure** — rebuild the entire bucket with one command.
-- **Security by default** — block public access, encrypt at rest, deny non-HTTPS traffic.
-- **Cost control** — lifecycle rules tier `raw/` to cheaper storage and expire `athena-results/`.
-
-## Instructions
+## Step-by-step instructions
 
 ### Step 1 — Create module structure
 ```bash
@@ -16,31 +18,39 @@ mkdir -p terraform/modules/data_lake
 mkdir -p terraform/envs/dev
 ```
 
-### Step 2 — Add three module files
-1. `terraform/modules/data_lake/variables.tf`
-2. `terraform/modules/data_lake/main.tf`
-3. `terraform/modules/data_lake/outputs.tf`
+### Step 2 — terraform/modules/data_lake/variables.tf
+Define inputs: `env`, `owner`, `account_id`, optional `s3_vpce_id` for VPC endpoint restriction on curated reads.
 
-Paste all from local complete project.
+### Step 3 — terraform/modules/data_lake/main.tf
+Implement:
 
-## What the module creates
-| Resource | Purpose |
-|----------|---------|
-| S3 data lake bucket | `{owner}-health-lake-{env}-{account_id}` |
-| S3 logs bucket | Access logs + CloudTrail delivery |
-| Versioning | On raw data — recover from overwrites |
-| Lifecycle | raw/ → IA → Glacier; athena-results/ 7d expiry; quarantine/ 30d |
-| Bucket policy | Deny insecure transport; optional VPC endpoint for curated/ |
+1. **Data lake S3 bucket** — name pattern `{owner}-health-lake-{env}-{account_id}`.
+2. **Block all public access** on the bucket.
+3. **Enable versioning** for recoverability on raw data.
+4. **Default encryption** — SSE-S3 (AES256).
+5. **Lifecycle rules:**
+   - `raw/` → Standard-IA at 30 days → Glacier at 90 days; expire noncurrent versions at 90 days
+   - `athena-results/` → expire after 7 days
+   - `quarantine/` → expire after 30 days
+6. **Logs bucket** — separate bucket for S3 access logs.
+7. **Server access logging** — data lake bucket logs to logs bucket under `s3-access/`.
+8. **Bucket policy** — deny requests where `aws:SecureTransport` is false; optionally deny curated reads outside VPC endpoint when `s3_vpce_id` is set.
 
-## Optional test
-```bash
-terraform fmt -check terraform/modules/data_lake/
-```
+### Step 4 — terraform/modules/data_lake/outputs.tf
+Export: bucket id, arn, name; logs bucket id and arn.
+
+Optional: `terraform fmt -check terraform/modules/data_lake/`
+
+## Files to create
+- `terraform/modules/data_lake/variables.tf`
+- `terraform/modules/data_lake/main.tf`
+- `terraform/modules/data_lake/outputs.tf`
 
 ## Done when
-- [ ] All three files in `terraform/modules/data_lake/`
-- [ ] You can explain raw/clean/curated/quarantine prefixes
-- [ ] Pushed to GitHub
+- [ ] Module defines raw, clean, curated, quarantine, and athena-results prefixes via lifecycle filters
+- [ ] Public access blocked and HTTPS-only policy in place
+- [ ] You can explain why logs get a separate bucket
+- [ ] Files pushed to `main`
 
 ## AWS required?
 No — Terraform code only. `terraform apply` comes after dev env wiring (Day 13).
