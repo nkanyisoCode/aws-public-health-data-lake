@@ -14,7 +14,13 @@ OWID CSV → EventBridge → Ingest Lambda → S3 raw/
                     Glue Crawler (on-demand) → Athena SQL
 ```
 
-See [docs/architecture.md](docs/architecture.md) for networking, bucket-per-env design, and module layout.
+## Architecture diagrams
+
+All UML and workflow diagrams are on the **[GitHub Wiki](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki)** (not in this repo).
+
+## 14-day build plan
+
+Daily tasks are tracked as GitHub Issues: https://github.com/nkanyisoCode/aws-public-health-data-lake/issues
 
 ## AWS services
 
@@ -148,10 +154,9 @@ Screenshot the `AccessDenied` errors for your portfolio.
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Security decisions](docs/security-decisions.md)
-- [Cost estimate](docs/cost-estimate.md)
-- [Runbook](docs/runbook.md)
+- [Architecture diagrams (Wiki)](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki)
+- [14-day issue tracker](docs/14-DAY-GITHUB-ISSUES.md)
+- Architecture, security, cost, and runbook docs are added during [Issues #2–#3](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues)
 
 ## Cost
 
