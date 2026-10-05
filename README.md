@@ -21,6 +21,8 @@ Detailed design and security rationale live on the Wiki (not in this repo):
 | Data flow, S3 zones, bucket strategy, networking | [Architecture](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Architecture) |
 | Encryption, IAM, audit, CI/CD auth | [Security Decisions](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Security-Decisions) |
 | Mermaid diagrams | [Architecture Overview](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Architecture-Overview) |
+| Monthly cost breakdown and controls | [Cost Estimate](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Cost-Estimate) |
+| Ingest, clean, Athena failure recovery | [Runbook](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki/Runbook) |
 
 ## Wiki & planning (not in this repo)
 
