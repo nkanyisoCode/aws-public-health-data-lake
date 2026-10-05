@@ -5,7 +5,7 @@ framework:
 skip-check:
   # Logs bucket intentionally has no access logging (would loop onto itself)
   - CKV_AWS_18
-  # SSE-S3 chosen over SSE-KMS for cost/simplicity — see wiki Security-Decisions page
+  # SSE-S3 chosen over SSE-KMS for cost/simplicity — see docs/security-decisions.md
   - CKV_AWS_145
   # CloudTrail bucket is the dedicated logs bucket; separate trail bucket not needed at this scale
   - CKV_AWS_35
