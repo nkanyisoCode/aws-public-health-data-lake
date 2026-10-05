@@ -21,7 +21,7 @@ OWID CSV → EventBridge → Ingest Lambda → S3 raw/
 | **Documentation & diagrams** | [GitHub Wiki](https://github.com/nkanyisoCode/aws-public-health-data-lake/wiki) |
 | **14-day build plan (issues)** | [GitHub Issues](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues) |
 
-Architecture, security, cost estimate, runbook, UML diagrams, and the daily task plan all live on the Wiki and Issues — keeping this repository for code only.
+Architecture, security, cost estimate, runbook, and UML diagrams live on the Wiki. Build tasks are tracked via GitHub Issues — keeping this repository for code only.
 
 ## AWS services
 
