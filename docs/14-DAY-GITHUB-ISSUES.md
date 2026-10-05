@@ -1,24 +1,35 @@
 # 14-Day GitHub Issues Reference
 
-These match the issues created on GitHub. Close each issue when that day's work is pushed.
+Close each issue when that day's work is pushed.
 
-| Day | Issue title | Files to add |
-|-----|-------------|--------------|
-| 1 | Day 1: Repository foundation | README.md, .gitignore, .checkov.yml |
-| 2 | Day 2: Architecture documentation | docs/architecture.md, docs/security-decisions.md |
-| 3 | Day 3: Cost and runbook docs | docs/cost-estimate.md, docs/runbook.md |
-| 4 | Day 4: Bootstrap scripts | scripts/bootstrap_tf_state.sh, scripts/region_aliases.csv |
-| 5 | Day 5: Ingest Lambda | lambda/ingest/* |
-| 6 | Day 6: Clean Lambda | lambda/clean/* |
-| 7 | Day 7: Helper scripts | scripts/clean_s3.py, manual_ingest.sh, test_iam_least_privilege.sh |
-| 8 | Day 8: Athena SQL | sql/*.sql |
-| 9 | Day 9: Terraform data lake module | terraform/modules/data_lake/* |
-| 10 | Day 10: Terraform ingestion module | terraform/modules/ingestion/* |
-| 11 | Day 11: Terraform analytics module | terraform/modules/analytics/* |
-| 12 | Day 12: Terraform security module | terraform/modules/security/* |
-| 13 | Day 13: Dev environment + network | terraform/envs/dev/*, modules/network, modules/warehouse |
-| 14 | Day 14: CI/CD and prod | .github/workflows, terraform/envs/prod, cicd module |
+## Iteration 1 — Days 1–5 (foundation, docs, ingest)
 
-**Diagrams:** [project-workflow-diagram.md](project-workflow-diagram.md)
+| Day | Issue | Label | Files to add |
+|-----|-------|-------|--------------|
+| 1 | [#1](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/1) | iteration 1 | README.md, .gitignore, .checkov.yml |
+| 2 | [#2](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/2) | iteration 1 | docs/architecture.md, docs/security-decisions.md |
+| 3 | [#3](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/3) | iteration 1 | docs/cost-estimate.md, docs/runbook.md |
+| 4 | [#4](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/4) | iteration 1 | scripts/bootstrap_tf_state.sh, region_aliases.csv |
+| 5 | [#5](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/5) | iteration 1 | lambda/ingest/* |
 
-**Full plan PDF:** see `cloud-engineer-aws-2week-plan/` on your machine.
+## Iteration 2 — Days 6–10 (Lambda, SQL, Terraform core)
+
+| Day | Issue | Label | Files to add |
+|-----|-------|-------|--------------|
+| 6 | [#6](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/6) | iteration 2 | lambda/clean/* |
+| 7 | [#7](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/7) | iteration 2 | scripts/clean_s3.py, manual_ingest.sh, test_iam_least_privilege.sh |
+| 8 | [#8](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/8) | iteration 2 | sql/*.sql |
+| 9 | [#9](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/9) | iteration 2 | terraform/modules/data_lake/* |
+| 10 | [#10](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/10) | iteration 2 | terraform/modules/ingestion/* |
+
+## Iteration 3 — Days 11–14 (analytics, security, deploy, CI/CD)
+
+| Day | Issue | Label | Files to add |
+|-----|-------|-------|--------------|
+| 11 | [#11](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/11) | iteration 3 | terraform/modules/analytics/* |
+| 12 | [#12](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/12) | iteration 3 | terraform/modules/security/* |
+| 13 | [#13](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/13) | iteration 3 | terraform/envs/dev/*, modules/network, modules/warehouse |
+| 14 | [#14](https://github.com/nkanyisoCode/aws-public-health-data-lake/issues/14) | iteration 3 | .github/workflows, terraform/envs/prod, cicd module |
+
+**UML diagrams:** [diagrams/](diagrams/)  
+**Workflow:** [project-workflow-diagram.md](project-workflow-diagram.md)

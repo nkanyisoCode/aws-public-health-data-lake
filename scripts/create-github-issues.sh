@@ -8,11 +8,13 @@ REPO="${1:-nkanyisoCode/aws-public-health-data-lake}"
 create_issue() {
   local title="$1"
   local body="$2"
-  gh issue create --repo "$REPO" --title "$title" --body "$body" --label "2-week-plan"
+  local label="$3"
+  gh issue create --repo "$REPO" --title "$title" --body "$body" --label "$label"
 }
 
-# Create label if missing
-gh label create "2-week-plan" --repo "$REPO" --color "0E8A16" --description "14-day portfolio push plan" 2>/dev/null || true
+gh label create "iteration 1" --repo "$REPO" --color "1D76DB" --description "Days 1-5: docs, scripts, ingest Lambda" 2>/dev/null || true
+gh label create "iteration 2" --repo "$REPO" --color "FBCA04" --description "Days 6-10: clean Lambda, SQL, Terraform core" 2>/dev/null || true
+gh label create "iteration 3" --repo "$REPO" --color "D93F0B" --description "Days 11-14: analytics, security, dev/prod, CI/CD" 2>/dev/null || true
 
 create_issue "Day 1: Repository foundation" "$(cat <<'EOF'
 ## Goal
@@ -34,7 +36,7 @@ No
 ## Diagram
 See `docs/project-workflow-diagram.md`
 EOF
-)"
+)" "iteration 1"
 
 create_issue "Day 2: Architecture documentation" "$(cat <<'EOF'
 ## Goal
@@ -52,7 +54,7 @@ Document system design and security decisions.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 1"
 
 create_issue "Day 3: Cost estimate and runbook" "$(cat <<'EOF'
 ## Goal
@@ -69,7 +71,7 @@ Add operational and cost documentation.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 1"
 
 create_issue "Day 4: Bootstrap scripts" "$(cat <<'EOF'
 ## Goal
@@ -87,7 +89,7 @@ Add scripts for Terraform state bootstrap and reference data.
 ## AWS required?
 No (script runs later when AWS account exists)
 EOF
-)"
+)" "iteration 1"
 
 create_issue "Day 5: Ingest Lambda" "$(cat <<'EOF'
 ## Goal
@@ -110,7 +112,7 @@ python3 -m py_compile lambda/ingest/handler.py
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 1"
 
 create_issue "Day 6: Clean Lambda" "$(cat <<'EOF'
 ## Goal
@@ -134,7 +136,7 @@ Transform raw CSV to Parquet, curated tables, and quarantine zone.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 2"
 
 create_issue "Day 7: Helper scripts" "$(cat <<'EOF'
 ## Goal
@@ -155,7 +157,7 @@ Local scripts for testing pipeline and IAM least privilege.
 ## AWS required?
 No (IAM test runs after deploy)
 EOF
-)"
+)" "iteration 2"
 
 create_issue "Day 8: Athena SQL queries" "$(cat <<'EOF'
 ## Goal
@@ -173,7 +175,7 @@ SQL queries for portfolio demonstration.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 2"
 
 create_issue "Day 9: Terraform data lake module" "$(cat <<'EOF'
 ## Goal
@@ -192,7 +194,7 @@ S3 bucket module with zones, lifecycle, encryption, HTTPS policy.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 2"
 
 create_issue "Day 10: Terraform ingestion module" "$(cat <<'EOF'
 ## Goal
@@ -213,7 +215,7 @@ S3 `ObjectCreated` on `raw/*.csv` triggers clean Lambda automatically.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 2"
 
 create_issue "Day 11: Terraform analytics module" "$(cat <<'EOF'
 ## Goal
@@ -232,7 +234,7 @@ Glue crawler has no schedule — clean Lambda starts it after writing Parquet.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 3"
 
 create_issue "Day 12: Terraform security module" "$(cat <<'EOF'
 ## Goal
@@ -248,7 +250,7 @@ SNS alerts, AWS Budget, CloudTrail, optional GuardDuty and Config.
 ## AWS required?
 No
 EOF
-)"
+)" "iteration 3"
 
 create_issue "Day 13: Dev environment and optional network" "$(cat <<'EOF'
 ## Goal
@@ -275,7 +277,7 @@ cd terraform/envs/dev && terraform init -backend=false && terraform validate
 ## AWS required?
 No for code; backend.tf bucket name filled when AWS ready
 EOF
-)"
+)" "iteration 3"
 
 create_issue "Day 14: CI/CD, prod environment, final polish" "$(cat <<'EOF'
 ## Goal
@@ -302,6 +304,6 @@ GitHub Actions, prod env, final README polish.
 ## AWS required?
 After Day 14 code is complete
 EOF
-)"
+)" "iteration 3"
 
 echo "Done. View issues: https://github.com/${REPO}/issues"
