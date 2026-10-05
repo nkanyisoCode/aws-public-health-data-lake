@@ -1,0 +1,96 @@
+@startuml deployment-aws
+skinparam nodeStyle rectangle
+skinparam cloudStyle rectangle
+
+title UML Deployment Diagram — AWS Infrastructure
+
+cloud "AWS Cloud\naf-south-1" {
+
+  node "Public Internet" as NET {
+    artifact "OWID CSV\nHTTPS" as OWID
+  }
+
+  node "Serverless — no VPC" as PUB {
+    component "Ingest Lambda\nPython 3.12" as IL
+    component "EventBridge\nweekly cron" as EB
+  }
+
+  node "Amazon S3" as S3NODE {
+    database "Data Lake Bucket\n{owner}-health-lake-{env}" as LAKE {
+      folder "raw/" as RAW
+      folder "clean/" as CLEAN
+      folder "curated/" as CUR
+      folder "quarantine/" as QUAR
+      folder "athena-results/" as RES
+    }
+    database "Logs Bucket\naccess + cloudtrail" as LOGS
+  }
+
+  node "VPC 10.0.0.0/16\n(optional)" as VPC {
+    node "Private Subnet AZ-a" as SUB1 {
+      component "Clean Lambda\n(optional)" as CL
+    }
+    node "Private Subnet AZ-b" as SUB2 {
+      database "RDS PostgreSQL\n(optional)" as RDS
+    }
+    component "S3 Gateway\nEndpoint" as S3EP
+    component "Secrets Manager\nInterface EP (optional)" as SMEP
+  }
+
+  node "Analytics" as ANAL {
+    component "Glue Crawler" as GC
+    component "Glue Data Catalog" as GDC
+    component "Athena Workgroup" as ATH
+  }
+
+  node "Security & Ops" as SEC {
+    component "IAM Roles" as IAM
+    component "CloudWatch Alarms" as CW
+    component "SNS Email Alerts" as SNS
+    component "CloudTrail" as CT
+    component "AWS Budget" as BUD
+    component "GuardDuty (opt)" as GD
+    component "AWS Config (opt)" as CFG
+  }
+
+  node "CI/CD" as CICD {
+    component "GitHub Actions\nOIDC" as GHA
+    component "Terraform State\nS3 bucket" as TFSTATE
+  }
+}
+
+actor "Data Engineer" as DE
+actor "Analyst" as AN
+
+OWID --> IL : download
+EB --> IL : trigger
+IL --> RAW : PutObject
+RAW --> CL : S3 event
+CL --> CLEAN
+CL --> CUR
+CL --> QUAR
+CL --> GC : StartCrawler
+CL --> S3EP : private S3 access
+CL --> SMEP : RDS credentials
+CL --> RDS : optional load
+GC --> GDC
+GDC --> ATH
+ATH --> CLEAN : scan Parquet
+ATH --> RES : query output
+AN --> ATH : SQL
+
+IL --> CW : errors
+CL --> CW : errors
+CW --> SNS
+CT --> LOGS
+S3NODE --> LOGS : access logs
+DE --> GHA : push code
+GHA --> TFSTATE
+DE --> IAM : admin deploy
+
+note bottom of VPC
+  Ingest stays OUTSIDE VPC
+  to avoid NAT Gateway cost (~$30/mo)
+end note
+
+@enduml

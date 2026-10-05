@@ -1,0 +1,43 @@
+@startuml activity-clean-lambda
+skinparam activityBackgroundColor #FEFECE
+skinparam activityBorderColor #A80036
+
+title UML Activity Diagram — Clean Lambda Processing
+
+start
+
+:S3 event received\n(raw/*.csv ObjectCreated);
+
+if (Key starts with raw/\nand ends with .csv?) then (yes)
+  :GetObject from S3 raw zone;
+  :Read CSV into pandas DataFrame;
+  :Melt wide OWID format to long format;
+  :Apply indicator metadata\n(MCV1, DTP3, Pol3, HepB3);
+  :Standardise region names\nand ISO codes;
+  partition "Validation loop" {
+    if (Valid year, region,\nvalue 0-100?) then (valid)
+      :Add to clean dataset;
+    else (invalid)
+      :Add to rejected dataset\nwith reject_reason;
+    endif
+  }
+  fork
+    :Write Parquet partitions\nclean/{indicator}/year=/;
+  fork again
+    :Write curated/dim_region.parquet;
+    :Write curated/fact_health_indicator.parquet;
+  fork again
+    if (Rejected rows exist?) then (yes)
+      :Write quarantine/rejected/\ningest_date=/;
+    else (no)
+    endif
+  end fork
+  :Call glue.start_crawler()\n(on-demand);
+  :Log stats to CloudWatch;
+  stop
+else (no)
+  :Skip — return skipped=true;
+  stop
+endif
+
+@enduml

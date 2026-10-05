@@ -1,0 +1,62 @@
+@startuml sequence-ingestion-pipeline
+skinparam responseMessageBelowArrow true
+skinparam sequenceMessageAlign center
+
+title UML Sequence Diagram — Ingestion & Cleaning Pipeline
+
+actor "EventBridge\n(cron weekly)" as EB
+participant "Ingest Lambda\n(no VPC)" as IL
+database "OWID\n(public HTTPS)" as OWID
+participant "S3 Data Lake\nraw/" as S3R
+participant "S3 Event\nNotification" as S3E
+participant "Clean Lambda\n(optional VPC)" as CL
+participant "S3 Data Lake\nclean/ curated/\nquarantine/" as S3C
+participant "Glue Crawler\n(on-demand)" as GC
+participant "Glue Data\nCatalog" as GDC
+participant "Athena\nWorkgroup" as ATH
+actor "Analyst" as AN
+participant "CloudWatch\n+ SNS" as MON
+
+== Scheduled ingestion ==
+EB -> IL : Invoke (ingest_date)
+activate IL
+IL -> OWID : GET vaccination CSV
+OWID --> IL : CSV bytes
+IL -> S3R : PutObject\nraw/owid/ingest_date=YYYY-MM-DD/
+deactivate IL
+
+== Event-driven cleaning ==
+S3R -> S3E : ObjectCreated (.csv)
+S3E -> CL : Invoke (S3 event)
+activate CL
+CL -> S3R : GetObject (raw CSV)
+S3R --> CL : CSV data
+CL -> CL : Parse, validate,\nstandardise regions
+alt valid rows
+  CL -> S3C : PutObject Parquet\nclean/{indicator}/year=/
+  CL -> S3C : PutObject Parquet\ncurated/dim_region/
+  CL -> S3C : PutObject Parquet\ncurated/fact_health_indicator/
+else invalid rows
+  CL -> S3C : PutObject Parquet\nquarantine/rejected/
+end
+CL -> GC : StartCrawler()
+deactivate CL
+
+== Schema registration ==
+activate GC
+GC -> S3C : Read clean/ + curated/
+GC -> GDC : Create/Update tables
+deactivate GC
+
+== Ad-hoc query ==
+AN -> ATH : SELECT vaccination\nby region
+ATH -> GDC : Resolve table schema
+ATH -> S3C : Scan Parquet (via S3)
+ATH --> AN : Query results
+
+== Failure path ==
+IL -[#red]-> MON : Lambda error
+CL -[#red]-> MON : Lambda error
+MON -> AN : SNS email alert
+
+@enduml

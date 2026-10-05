@@ -1,5 +1,8 @@
 # Project Workflow & Planning Diagrams
 
+> **UML diagrams (Use Case, Sequence, Class, Component, Deployment, Activity, State, Gantt):**  
+> See **[docs/diagrams/](diagrams/)** — PlantUML source files you can export to PNG/SVG.
+
 ## 1. Runtime data pipeline (AWS)
 
 What the system does once deployed:
