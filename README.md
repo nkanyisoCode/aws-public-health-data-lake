@@ -54,10 +54,10 @@ Built incrementally via [GitHub Issues](https://github.com/nkanyisoCode/aws-publ
 ```
 aws-public-health-data-lake/
 ├── docs/                  # architecture, security, cost, runbook (Days 2–3)
-├── .github/workflows/     # CI/CD (Day 14)
-├── lambda/                # ingest + clean (Days 5–6)
-├── sql/                   # Athena queries (Day 8)
-└── terraform/             # IaC modules (Days 9–14)
+├── .github/workflows/     # CI/CD 
+├── lambda/                # ingest + clean 
+├── sql/                   # Athena queries 
+└── terraform/             # IaC modules 
 ```
 
 ## Quick start (after full build)
