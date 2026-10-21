@@ -10,6 +10,9 @@ override.tf.json
 # Lambda build artifacts
 lambda/**/package/
 lambda/**/*.zip
+terraform/modules/ingestion/clean_build/
+terraform/modules/ingestion/clean.zip
+terraform/modules/ingestion/ingest.zip
 
 # Python
 __pycache__/

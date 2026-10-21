@@ -4,9 +4,23 @@ data "archive_file" "ingest" {
   output_path = "${path.module}/ingest.zip"
 }
 
+resource "terraform_data" "clean_lambda_package" {
+  triggers_replace = {
+    handler_sha = filemd5("${path.module}/../../../lambda/clean/handler.py")
+    req_sha     = filemd5("${path.module}/../../../lambda/clean/requirements.txt")
+    script_sha  = filemd5("${path.module}/build_clean_lambda.sh")
+  }
+
+  provisioner "local-exec" {
+    command = "bash ${path.module}/build_clean_lambda.sh"
+  }
+}
+
 data "archive_file" "clean" {
+  depends_on = [terraform_data.clean_lambda_package]
+
   type        = "zip"
-  source_dir  = "${path.module}/../../../lambda/clean"
+  source_dir  = "${path.module}/clean_build"
   output_path = "${path.module}/clean.zip"
 }
 
