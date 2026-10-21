@@ -1,102 +1,165 @@
-# GitHub Actions OIDC — no long-lived AWS keys in GitHub secrets
-
-resource "aws_iam_openid_connect_provider" "github" {
-  count = var.enable_github_oidc ? 1 : 0
-
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03fa05379b1d50909700b4cfc09"]
+locals {
+  data_lake_bucket_name = "${var.owner}-health-lake-${var.env}-${var.account_id}"
+  logs_bucket_name      = "${var.owner}-health-lake-logs-${var.env}-${var.account_id}"
 }
 
-data "aws_iam_policy_document" "gha_trust" {
-  count = var.enable_github_oidc ? 1 : 0
+resource "aws_s3_bucket" "data_lake" {
+  bucket = local.data_lake_bucket_name
+}
 
+resource "aws_s3_bucket" "logs" {
+  bucket = local.logs_bucket_name
+}
+
+resource "aws_s3_bucket_public_access_block" "data_lake" {
+  bucket = aws_s3_bucket.data_lake.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "data_lake" {
+  bucket = aws_s3_bucket.data_lake.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+    bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+    bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_versioning" "data_lake" {
+  bucket = aws_s3_bucket.data_lake.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_logging" "data_lake" {
+  bucket = aws_s3_bucket.data_lake.id
+
+  target_bucket = aws_s3_bucket.logs.id
+  target_prefix = "s3-access/data-lake/"
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "data_lake" {
+  bucket = aws_s3_bucket.data_lake.id
+
+  rule {
+    id     = "raw-tiering"
+    status = "Enabled"
+
+    filter {
+      prefix = "raw/"
+    }
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = 90
+      storage_class = "GLACIER"
+    }
+  }
+
+  rule {
+    id     = "expire-athena-results"
+    status = "Enabled"
+
+    filter {
+      prefix = "athena-results/"
+    }
+
+    expiration {
+      days = 7
+    }
+  }
+
+  rule {
+    id     = "expire-quarantine"
+    status = "Enabled"
+
+    filter {
+      prefix = "quarantine/"
+    }
+
+    expiration {
+      days = 30
+    }
+  }
+}
+
+data "aws_iam_policy_document" "data_lake" {
   statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
+    sid    = "DenyInsecureTransport"
+    effect = "Deny"
+
     principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github[0].arn]
+      type        = "*"
+      identifiers = ["*"]
     }
+
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.data_lake.arn, "${aws_s3_bucket.data_lake.arn}/*"]
+
     condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:aud"
-      values   = ["sts.amazonaws.com"]
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
     }
-    condition {
-      test     = "StringLike"
-      variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:*"]
+  }
+
+  dynamic "statement" {
+    for_each = var.s3_vpce_id != null ? [1] : []
+
+    content {
+      sid    = "DenyCuratedReadUnlessVpcEndpoint"
+      effect = "Deny"
+
+      principals {
+        type        = "*"
+        identifiers = ["*"]
+      }
+
+      actions   = ["s3:GetObject"]
+      resources = ["${aws_s3_bucket.data_lake.arn}/curated/*"]
+
+      condition {
+        test     = "StringNotEquals"
+        variable = "aws:sourceVpce"
+        values   = [var.s3_vpce_id]
+      }
     }
   }
 }
 
-resource "aws_iam_role" "github_plan" {
-  count = var.enable_github_oidc ? 1 : 0
-  name  = "github-actions-terraform-plan-${var.env}"
-
-  assume_role_policy = data.aws_iam_policy_document.gha_trust[0].json
-}
-
-resource "aws_iam_role" "github_apply" {
-  count = var.enable_github_oidc ? 1 : 0
-  name  = "github-actions-terraform-apply-${var.env}"
-
-  assume_role_policy = data.aws_iam_policy_document.gha_trust[0].json
-}
-
-data "aws_iam_policy_document" "terraform_read" {
-  statement {
-    sid    = "TerraformReadOnly"
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:ListBucket",
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:DeleteItem",
-      "ec2:Describe*",
-      "iam:Get*",
-      "iam:List*",
-      "lambda:Get*",
-      "lambda:List*",
-      "glue:Get*",
-      "glue:List*",
-      "athena:Get*",
-      "athena:List*",
-      "cloudwatch:Describe*",
-      "cloudwatch:Get*",
-      "cloudwatch:List*",
-      "sns:Get*",
-      "sns:List*",
-      "events:Describe*",
-      "events:List*",
-      "budgets:ViewBudget",
-      "cloudtrail:DescribeTrails",
-      "cloudtrail:GetTrailStatus",
-      "config:Describe*",
-      "config:Get*",
-      "config:List*",
-      "guardduty:Get*",
-      "guardduty:List*",
-      "rds:Describe*",
-      "kms:Describe*",
-      "kms:List*",
-      "sts:GetCallerIdentity",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "github_plan" {
-  count = var.enable_github_oidc ? 1 : 0
-  name  = "terraform-plan-read"
-  role  = aws_iam_role.github_plan[0].id
-  policy = data.aws_iam_policy_document.terraform_read.json
-}
-
-# Apply role needs write access — scope down in production
-resource "aws_iam_role_policy_attachment" "github_apply" {
-  count      = var.enable_github_oidc ? 1 : 0
-  role       = aws_iam_role.github_apply[0].name
-  policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
+resource "aws_s3_bucket_policy" "data_lake" {
+  bucket = aws_s3_bucket.data_lake.id
+  policy = data.aws_iam_policy_document.data_lake.json
 }
