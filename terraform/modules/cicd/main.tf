@@ -88,9 +88,9 @@ data "aws_iam_policy_document" "terraform_read" {
 }
 
 resource "aws_iam_role_policy" "github_plan" {
-  count = var.enable_github_oidc ? 1 : 0
-  name  = "terraform-plan-read"
-  role  = aws_iam_role.github_plan[0].id
+  count  = var.enable_github_oidc ? 1 : 0
+  name   = "terraform-plan-read"
+  role   = aws_iam_role.github_plan[0].id
   policy = data.aws_iam_policy_document.terraform_read.json
 }
 

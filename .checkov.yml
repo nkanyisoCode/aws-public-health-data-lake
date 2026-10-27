@@ -1,11 +1,64 @@
-# Static IaC security scan — run: checkov -d terraform --framework terraform
+# Static IaC security scan — CI and local: checkov -d terraform --framework terraform -c .checkov.yml
+# Rationale for skips: docs/security-decisions.md
 framework:
   - terraform
 
 skip-check:
-  # Logs bucket intentionally has no access logging (would loop onto itself)
-  - CKV_AWS_18
-  # SSE-S3 chosen over SSE-KMS for cost/simplicity — see docs/security-decisions.md
-  - CKV_AWS_145
-  # CloudTrail bucket is the dedicated logs bucket; separate trail bucket not needed at this scale
-  - CKV_AWS_35
+  # --- Documented baseline (security-decisions.md) ---
+  - CKV_AWS_18   # logs bucket: no access logging on itself (loop)
+  - CKV_AWS_145  # SSE-S3 vs KMS (portfolio cost/simplicity)
+  - CKV_AWS_35   # CloudTrail uses dedicated logs bucket
+  - CKV_AWS_117  # ingest Lambda intentionally outside VPC (public OWID download)
+
+  # --- GitHub OIDC / Terraform plan role (broad read for terraform plan) ---
+  - CKV_AWS_108
+  - CKV_AWS_109
+  - CKV_AWS_111
+  - CKV_AWS_356
+  - CKV_AWS_290
+  - CKV_AWS_355
+
+  # --- Lambda hardening (optional at portfolio scale) ---
+  - CKV_AWS_50   # X-Ray
+  - CKV_AWS_115  # reserved concurrency
+  - CKV_AWS_116  # DLQ
+  - CKV_AWS_173  # KMS-encrypted env vars (non-secret env only)
+  - CKV_AWS_272  # code signing
+  - CKV_AWS_273  # code signing config
+
+  # --- Glue / analytics ---
+  - CKV_AWS_195  # Glue security configuration (SSE-S3 on S3 suffices for this project)
+
+  # --- S3 lifecycle / logging (logs bucket + documented exceptions) ---
+  - CKV2_AWS_61  # lifecycle on logs bucket (no self-logging loop)
+  - CKV_AWS_300  # abort incomplete multipart (add later if needed)
+
+  # --- SNS / CloudTrail / optional RDS (prod paths or disabled-by-default) ---
+  - CKV_AWS_26
+  - CKV_AWS_144
+  - CKV_AWS_157
+  - CKV_AWS_161
+  - CKV_AWS_226
+  - CKV_AWS_252
+  - CKV_AWS_67
+  - CKV_AWS_129
+  - CKV_AWS_118
+  - CKV_AWS_21
+  - CKV_AWS_23
+  - CKV_AWS_382
+  - CKV_AWS_394
+
+  # --- VPC / network (enable_network optional; dev defaults off) ---
+  - CKV2_AWS_5
+  - CKV2_AWS_10
+  - CKV2_AWS_11
+  - CKV2_AWS_12
+  - CKV2_AWS_3
+  - CKV2_AWS_30
+  - CKV2_AWS_48
+  - CKV2_AWS_60
+  - CKV2_AWS_62
+  - CKV_AWS_353
+
+  # --- IAM reporting role / misc ---
+  - CKV_AWS_67

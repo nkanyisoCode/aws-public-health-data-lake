@@ -167,9 +167,9 @@ resource "aws_iam_role_policy" "clean" {
         Resource = [var.data_lake_bucket_arn, "${var.data_lake_bucket_arn}/raw/*"]
       },
       {
-        Sid      = "WriteCleanCuratedQuarantine"
-        Effect   = "Allow"
-        Action   = ["s3:PutObject", "s3:DeleteObject"]
+        Sid    = "WriteCleanCuratedQuarantine"
+        Effect = "Allow"
+        Action = ["s3:PutObject", "s3:DeleteObject"]
         Resource = [
           "${var.data_lake_bucket_arn}/clean/*",
           "${var.data_lake_bucket_arn}/curated/*",
@@ -302,9 +302,9 @@ resource "aws_iam_role_policy" "reporting" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "ReadCleanCurated"
-        Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:ListBucket"]
+        Sid    = "ReadCleanCurated"
+        Effect = "Allow"
+        Action = ["s3:GetObject", "s3:ListBucket"]
         Resource = [
           var.data_lake_bucket_arn,
           "${var.data_lake_bucket_arn}/clean/*",
@@ -312,9 +312,9 @@ resource "aws_iam_role_policy" "reporting" {
         ]
       },
       {
-        Sid      = "AthenaQuery"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "AthenaQuery"
+        Effect = "Allow"
+        Action = [
           "athena:StartQueryExecution",
           "athena:GetQueryExecution",
           "athena:GetQueryResults",

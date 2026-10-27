@@ -53,7 +53,7 @@ Set repository variables `AWS_PLAN_ROLE_ARN` and `AWS_APPLY_ROLE_ARN` after enab
 | CKV_AWS_117 | Lambda in VPC | **Conditional** — only when `enable_network = true`; required for private RDS access. |
 | GitHub apply PowerUserAccess | Broad write scope | **Accepted for learning** — scope down to `s3:*`, `lambda:*`, `iam:*` on project ARNs before prod. |
 
-Run locally: `pip install checkov && checkov -d terraform --framework terraform`
+Run locally: `pip install checkov && checkov -d terraform --framework terraform -c .checkov.yml` (same config as GitHub Actions).
 
 ## Root account
 

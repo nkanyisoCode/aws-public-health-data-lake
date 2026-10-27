@@ -56,9 +56,9 @@ resource "aws_cloudtrail" "main" {
 
 data "aws_iam_policy_document" "logs_bucket" {
   statement {
-    sid    = "AWSCloudTrailAclCheck"
-    effect = "Allow"
-    actions = ["s3:GetBucketAcl"]
+    sid       = "AWSCloudTrailAclCheck"
+    effect    = "Allow"
+    actions   = ["s3:GetBucketAcl"]
     resources = [var.logs_bucket_arn]
     principals {
       type        = "Service"
@@ -67,9 +67,9 @@ data "aws_iam_policy_document" "logs_bucket" {
   }
 
   statement {
-    sid    = "AWSCloudTrailWrite"
-    effect = "Allow"
-    actions = ["s3:PutObject"]
+    sid       = "AWSCloudTrailWrite"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
     resources = ["${var.logs_bucket_arn}/cloudtrail/*"]
     principals {
       type        = "Service"
@@ -85,9 +85,9 @@ data "aws_iam_policy_document" "logs_bucket" {
   dynamic "statement" {
     for_each = var.enable_config ? [1] : []
     content {
-      sid    = "AWSConfigBucketDelivery"
-      effect = "Allow"
-      actions = ["s3:PutObject", "s3:GetBucketAcl"]
+      sid       = "AWSConfigBucketDelivery"
+      effect    = "Allow"
+      actions   = ["s3:PutObject", "s3:GetBucketAcl"]
       resources = [var.logs_bucket_arn, "${var.logs_bucket_arn}/config/*"]
       principals {
         type        = "Service"

@@ -34,9 +34,9 @@ resource "aws_iam_role_policy" "glue_crawler" {
         Resource = [var.data_lake_bucket_arn, "${var.data_lake_bucket_arn}/clean/*", "${var.data_lake_bucket_arn}/curated/*"]
       },
       {
-        Sid      = "GlueCatalog"
-        Effect   = "Allow"
-        Action   = [
+        Sid    = "GlueCatalog"
+        Effect = "Allow"
+        Action = [
           "glue:CreateTable",
           "glue:UpdateTable",
           "glue:GetTable",
