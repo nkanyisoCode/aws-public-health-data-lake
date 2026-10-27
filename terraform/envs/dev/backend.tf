@@ -13,7 +13,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "REPLACE_WITH_TFSTATE_BUCKET"
+    bucket       = "nkanyiso-health-lake-tfstate-831140124781"
     key          = "health-lake/dev/terraform.tfstate"
     region       = "af-south-1"
     encrypt      = true

@@ -159,49 +159,57 @@ resource "aws_iam_role_policy" "clean" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Sid      = "ReadRaw"
-        Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:ListBucket"]
-        Resource = [var.data_lake_bucket_arn, "${var.data_lake_bucket_arn}/raw/*"]
-      },
-      {
-        Sid    = "WriteCleanCuratedQuarantine"
-        Effect = "Allow"
-        Action = ["s3:PutObject", "s3:DeleteObject"]
-        Resource = [
-          "${var.data_lake_bucket_arn}/clean/*",
-          "${var.data_lake_bucket_arn}/curated/*",
-          "${var.data_lake_bucket_arn}/quarantine/*",
-        ]
-      },
-      {
-        Sid      = "StartGlueCrawler"
-        Effect   = "Allow"
-        Action   = ["glue:StartCrawler", "glue:GetCrawler"]
-        Resource = var.glue_crawler_arn != null ? [var.glue_crawler_arn] : ["*"]
-      },
-      {
-        Sid      = "CloudWatchLogs"
-        Effect   = "Allow"
-        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
-        Resource = "arn:aws:logs:*:*:*"
-      },
-      {
+    Statement = concat(
+      [
+        {
+          Sid      = "ReadRaw"
+          Effect   = "Allow"
+          Action   = ["s3:GetObject", "s3:ListBucket"]
+          Resource = [var.data_lake_bucket_arn, "${var.data_lake_bucket_arn}/raw/*"]
+        },
+        {
+          Sid    = "WriteCleanCuratedQuarantine"
+          Effect = "Allow"
+          Action = ["s3:PutObject", "s3:DeleteObject"]
+          Resource = [
+            "${var.data_lake_bucket_arn}/clean/*",
+            "${var.data_lake_bucket_arn}/curated/*",
+            "${var.data_lake_bucket_arn}/quarantine/*",
+          ]
+        },
+        {
+          Sid      = "StartGlueCrawler"
+          Effect   = "Allow"
+          Action   = ["glue:StartCrawler", "glue:GetCrawler"]
+          Resource = var.glue_crawler_arn != null ? [var.glue_crawler_arn] : ["*"]
+        },
+        {
+          Sid      = "CloudWatchLogs"
+          Effect   = "Allow"
+          Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+          Resource = "arn:aws:logs:*:*:*"
+        },
+      ],
+      length(var.private_subnet_ids) > 0 ? [{
         Sid      = "VpcNetworking"
         Effect   = "Allow"
         Action   = ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces", "ec2:DeleteNetworkInterface"]
         Resource = "*"
-      },
-      {
+      }] : [],
+      var.rds_secret_arn != null ? [{
         Sid      = "SecretsManagerRead"
         Effect   = "Allow"
         Action   = ["secretsmanager:GetSecretValue"]
-        Resource = var.rds_secret_arn != null ? [var.rds_secret_arn] : []
-      }
-    ]
+        Resource = [var.rds_secret_arn]
+      }] : [],
+    )
   })
+}
+
+resource "aws_s3_object" "clean_lambda_package" {
+  bucket = var.data_lake_bucket_id
+  key    = "deploy/lambda/health-lake-clean-${var.env}.zip"
+  source = data.archive_file.clean.output_path
 }
 
 resource "aws_lambda_function" "clean" {
@@ -212,8 +220,11 @@ resource "aws_lambda_function" "clean" {
   timeout       = 300
   memory_size   = 512
 
-  filename         = data.archive_file.clean.output_path
+  s3_bucket        = aws_s3_object.clean_lambda_package.bucket
+  s3_key           = aws_s3_object.clean_lambda_package.key
   source_code_hash = data.archive_file.clean.output_base64sha256
+
+  depends_on = [aws_s3_object.clean_lambda_package, aws_iam_role_policy.clean]
 
   dynamic "vpc_config" {
     for_each = length(var.private_subnet_ids) > 0 ? [1] : []
