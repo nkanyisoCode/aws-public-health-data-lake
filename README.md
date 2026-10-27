@@ -60,6 +60,43 @@ aws-public-health-data-lake/
 └── terraform/             # IaC modules 
 ```
 
+## Live demo (dev, after deploy)
+
+Set region and bucket (from Terraform output in `terraform/envs/dev`):
+
+```bash
+export AWS_DEFAULT_REGION=af-south-1
+cd aws-public-health-data-lake
+BUCKET="$(terraform -chdir=terraform/envs/dev output -raw data_lake_bucket)"
+INGEST_DATE="$(date +%Y-%m-%d)"
+
+# 1) Ingest OWID CSV → S3 raw/ (triggers clean Lambda)
+./scripts/manual_ingest.sh dev "$INGEST_DATE" "$BUCKET"
+
+# 2) Show lake zones
+aws s3 ls "s3://${BUCKET}/raw/owid/ingest_date=${INGEST_DATE}/"
+aws s3 ls "s3://${BUCKET}/curated/" --recursive | head -10
+
+# 3) Refresh Glue catalog (if tables are stale)
+aws glue start-crawler --name health-lake-clean-dev
+aws glue get-crawler --name health-lake-clean-dev \
+  --query 'Crawler.[State,LastCrawl.Status]' --output text
+
+# 4) Athena — run in console (workgroup health-lake-dev, DB health_lake_dev) or CLI:
+aws athena start-query-execution \
+  --work-group health-lake-dev \
+  --query-execution-context Database=health_lake_dev \
+  --result-configuration "OutputLocation=s3://${BUCKET}/athena-results/" \
+  --query-string "SELECT d.region_name, f.year, f.indicator_name, f.value
+FROM fact_health_indicator f
+JOIN dim_region d ON f.region_key = d.region_key
+WHERE f.indicator_code = 'measles_mcv1' AND f.year >= 2020
+ORDER BY f.year DESC, d.region_name
+LIMIT 10;"
+```
+
+Poll CLI queries with `aws athena get-query-execution --query-execution-id <id>`. Full troubleshooting: [`docs/runbook.md`](docs/runbook.md).
+
 ## Quick start (after full build)
 
 See [`docs/architecture.md`](docs/architecture.md) and [`docs/runbook.md`](docs/runbook.md) for deploy and recovery steps once all issues are complete.
