@@ -1,7 +1,7 @@
 region      = "af-south-1"
 env         = "dev"
 owner       = "nkanyiso"
-alert_email = "your-email@example.com"
+alert_email = "nkanyiso.mphephetho@gmail.com"
 
 enable_network                  = false
 enable_rds                      = false

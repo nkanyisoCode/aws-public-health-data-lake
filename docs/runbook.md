@@ -56,14 +56,32 @@
 
 ## When Athena returns no data
 
-1. Confirm Parquet exists: `aws s3 ls s3://BUCKET/clean/ --recursive`
-2. Run Glue crawler manually:
+1. Confirm Parquet exists:
+   ```bash
+   aws s3 ls s3://BUCKET/clean/ --recursive | head
+   aws s3 ls s3://BUCKET/curated/ --recursive
+   ```
+2. Run Glue crawler manually (IAM role needs Glue catalog + S3 read; `AWSGlueServiceRole` attached in Terraform):
    ```bash
    aws glue start-crawler --name health-lake-clean-dev
-   aws glue get-crawler --name health-lake-clean-dev --query Crawler.State
+   aws glue get-crawler --name health-lake-clean-dev \
+     --query 'Crawler.[State,LastCrawl.Status,LastCrawl.ErrorMessage]' --output text
    ```
-3. Wait for `READY`, then query in Athena workgroup `health-lake-dev`.
-4. Use SQL from `sql/vaccination_by_region.sql`.
+3. Wait for `READY` and `LastCrawl` **SUCCEEDED**. List catalog tables:
+   ```bash
+   aws glue get-tables --database-name health_lake_dev --query 'TableList[*].Name' --output table
+   ```
+   Expect **`fact_health_indicator`**, **`dim_region`**, and often **`clean`** (merged `clean/` prefix). There is usually **no** separate `measles_mcv1` table.
+4. Query in Athena workgroup **`health-lake-dev`**, database **`health_lake_dev`**. Use [`sql/vaccination_by_region.sql`](../sql/vaccination_by_region.sql) (joins fact + dim) or create views from [`sql/create_views.sql`](../sql/create_views.sql).
+5. **SQL runs in the Athena query editor**, not in the Linux shell. CLI example:
+   ```bash
+   aws athena start-query-execution \
+     --work-group health-lake-dev \
+     --query-execution-context Database=health_lake_dev \
+     --result-configuration OutputLocation=s3://BUCKET/athena-results/ \
+     --query-string "SHOW TABLES IN health_lake_dev"
+   ```
+   Poll with `aws athena get-query-execution` until `SUCCEEDED`, then `get-query-results`.
 
 ---
 

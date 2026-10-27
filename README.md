@@ -64,6 +64,32 @@ aws-public-health-data-lake/
 
 See [`docs/architecture.md`](docs/architecture.md) and [`docs/runbook.md`](docs/runbook.md) for deploy and recovery steps once all issues are complete.
 
+## Query with Athena
+
+After deploy, ingest, clean, and a successful Glue crawl (`health-lake-clean-{env}`), query the **curated** tables (not per-indicator Glue names unless your crawler creates them).
+
+| Setting | Dev example |
+|---------|-------------|
+| Region | `af-south-1` |
+| Workgroup | `health-lake-dev` |
+| Database | `health_lake_dev` |
+| Result prefix | `s3://{data_lake_bucket}/athena-results/` |
+
+**Console:** AWS → **Athena** → select workgroup and database → paste SQL from [`sql/vaccination_by_region.sql`](sql/vaccination_by_region.sql) or run [`sql/create_views.sql`](sql/create_views.sql) then query `vw_vaccination_summary`.
+
+**CLI:** set `AWS_DEFAULT_REGION=af-south-1` and use `aws athena start-query-execution` with `--work-group health-lake-dev` and `--query-execution-context Database=health_lake_dev` (see [`docs/runbook.md`](docs/runbook.md)).
+
+**Typical Glue tables after crawl:** `fact_health_indicator`, `dim_region`, and often a merged `clean` table for the `clean/` prefix. Example:
+
+```sql
+SELECT d.region_name, f.year, f.indicator_name, f.value
+FROM health_lake_dev.fact_health_indicator f
+JOIN health_lake_dev.dim_region d ON f.region_key = d.region_key
+WHERE f.indicator_code = 'measles_mcv1' AND f.year >= 2015
+ORDER BY f.year DESC, d.region_name
+LIMIT 20;
+```
+
 ## Cost
 
 Core pipeline: **~$0.60/month**. See [`docs/cost-estimate.md`](docs/cost-estimate.md).

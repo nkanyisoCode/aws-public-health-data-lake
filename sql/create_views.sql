@@ -1,4 +1,6 @@
--- Curated star-schema views over Glue tables (run after crawler completes).
+-- Curated star-schema views over Glue tables (run in Athena after crawler SUCCEEDS).
+-- Prerequisites: workgroup health-lake-dev, database health_lake_dev,
+-- tables fact_health_indicator and dim_region (from s3://.../curated/).
 
 CREATE OR REPLACE VIEW health_lake_dev.vw_vaccination_summary AS
 SELECT

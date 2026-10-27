@@ -20,6 +20,11 @@ resource "aws_iam_role" "glue_crawler" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "glue_service_role" {
+  role       = aws_iam_role.glue_crawler.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+}
+
 resource "aws_iam_role_policy" "glue_crawler" {
   name = "health-lake-glue-s3-${var.env}"
   role = aws_iam_role.glue_crawler.id
@@ -39,14 +44,19 @@ resource "aws_iam_role_policy" "glue_crawler" {
         Action = [
           "glue:CreateTable",
           "glue:UpdateTable",
+          "glue:DeleteTable",
           "glue:GetTable",
           "glue:GetTables",
           "glue:GetDatabase",
           "glue:CreatePartition",
           "glue:UpdatePartition",
+          "glue:DeletePartition",
           "glue:GetPartition",
           "glue:GetPartitions",
           "glue:BatchCreatePartition",
+          "glue:BatchGetPartition",
+          "glue:BatchUpdatePartition",
+          "glue:BatchDeletePartition",
         ]
         Resource = [
           "arn:aws:glue:${var.region}:${var.account_id}:catalog",
@@ -85,12 +95,7 @@ resource "aws_glue_crawler" "clean_zone" {
     update_behavior = "UPDATE_IN_DATABASE"
   }
 
-  configuration = jsonencode({
-    Version = 1.0
-    Grouping = {
-      TableGroupingPolicy = "CombineCompatibleSchemas"
-    }
-  })
+  # Default crawler grouping (one table per data path). Avoid CombineCompatibleSchemas — it merged all of clean/ into one "clean" table.
 }
 
 resource "aws_athena_workgroup" "health_lake" {
