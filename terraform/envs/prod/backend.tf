@@ -1,0 +1,22 @@
+terraform {
+  required_version = ">= 1.10"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
+  }
+
+  backend "s3" {
+    bucket       = "REPLACE_WITH_TFSTATE_BUCKET"
+    key          = "health-lake/prod/terraform.tfstate"
+    region       = "af-south-1"
+    encrypt      = true
+    use_lockfile = true
+  }
+}
